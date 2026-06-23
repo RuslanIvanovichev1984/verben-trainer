@@ -256,7 +256,13 @@ const activeLevels = new Set(["A1","A2","B1"]);
 // bei allen anderen liegt der Fokus auf dem Perfekt.
 const PRAETERITUM_FOCUS = new Set(["dürfen","können","mögen","müssen","sollen","wollen","haben","sein"]);
 
-let score = 0, streak = 0, best = 0;
+const STORAGE_KEY = "verbenTrainerProgress";
+const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+let score = saved.score || 0, streak = saved.streak || 0, best = saved.best || 0;
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({score, streak, best}));
+}
 let pool = [];
 let current = null;
 let askField = 2; // 2=Präteritum, 3=Perfekt
@@ -383,6 +389,7 @@ function chooseAnswer(btn, picked, correctSet){
   scoreEl.textContent = score;
   streakEl.textContent = streak;
   bestBadge.textContent = `Beste Serie: ${best}`;
+  saveProgress();
   nextBtn.style.display = "block";
 }
 
@@ -390,11 +397,15 @@ nextBtn.addEventListener("click", newQuestion);
 restartBtn.addEventListener("click", ()=>{
   score = 0; streak = 0; best = 0;
   scoreEl.textContent = 0; streakEl.textContent = 0; bestBadge.textContent = "Beste Serie: 0";
+  saveProgress();
   newQuestion();
 });
 
 buildLevelToggles();
 rebuildPool();
+scoreEl.textContent = score;
+streakEl.textContent = streak;
+bestBadge.textContent = `Beste Serie: ${best}`;
 newQuestion();
 </script>
 </body>
