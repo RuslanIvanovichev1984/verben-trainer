@@ -301,6 +301,17 @@ function toIchForm(perfekt){
   return perfekt;
 }
 
+function getAuxSet(perfekt){
+  if(perfekt.startsWith("hat/ist ")) return new Set(["haben","sein"]);
+  if(perfekt.startsWith("hat ")) return new Set(["haben"]);
+  if(perfekt.startsWith("ist ")) return new Set(["sein"]);
+  return new Set();
+}
+
+function partizipOnly(perfekt){
+  return perfekt.replace(/^(hat\/ist|hat|ist)\s+/, "");
+}
+
 function pickWrongOptions(correct, field){
   const candidates = pool.filter(v=>v[field] !== correct).map(v=>v[field]);
   const set = new Set();
@@ -318,36 +329,47 @@ function newQuestion(){
   current = pool[Math.floor(Math.random()*pool.length)];
   askField = PRAETERITUM_FOCUS.has(current[0]) ? 2 : 3;
   const rawCorrect = current[askField];
-  const rawWrongs = pickWrongOptions(rawCorrect, askField);
-  const toDisplay = askField === 3 ? toIchForm : (x=>x);
-  const correct = toDisplay(rawCorrect);
-  const wrongs = rawWrongs.map(toDisplay);
-  const options = [correct, ...wrongs].sort(()=>Math.random()-0.5);
 
   verbDisplay.innerHTML = `${current[0]} <small>(${current[1]}) · ${current[4]}</small>`;
-  questionText.textContent = askField === 2
-    ? "Wie war das gestern? Ich ___"
-    : "Was hast du gestern gemacht? Ich ___";
+
+  let correctSet, options;
+  if(askField === 3 && Math.random() < 0.5){
+    // Sub-Modus: nur das Hilfsverb abfragen
+    const auxSet = getAuxSet(rawCorrect);
+    correctSet = auxSet;
+    options = ["haben","sein"].sort(()=>Math.random()-0.5);
+    questionText.textContent = `Haben oder sein? Ich ___ ${partizipOnly(rawCorrect)}.`;
+  } else {
+    const toDisplay = askField === 3 ? toIchForm : (x=>x);
+    const correct = toDisplay(rawCorrect);
+    const wrongs = pickWrongOptions(rawCorrect, askField).map(toDisplay);
+    correctSet = new Set([correct]);
+    options = [correct, ...wrongs].sort(()=>Math.random()-0.5);
+    questionText.textContent = askField === 2
+      ? "Wie war das gestern? Ich ___"
+      : "Was hast du gestern gemacht? Ich ___";
+  }
 
   optionsEl.innerHTML = "";
   options.forEach(opt=>{
     const btn = document.createElement("button");
     btn.className = "opt";
     btn.textContent = opt;
-    btn.addEventListener("click", ()=>chooseAnswer(btn, opt, correct));
+    btn.addEventListener("click", ()=>chooseAnswer(btn, opt, correctSet));
     optionsEl.appendChild(btn);
   });
 }
 
-function chooseAnswer(btn, picked, correct){
+function chooseAnswer(btn, picked, correctSet){
   if(locked) return;
   locked = true;
+  const correctText = [...correctSet].join(" / ");
   [...optionsEl.children].forEach(b=>{
     b.disabled = true;
-    if(b.textContent === correct) b.classList.add("correct");
+    if(correctSet.has(b.textContent)) b.classList.add("correct");
     else if(b === btn) b.classList.add("wrong");
   });
-  if(picked === correct){
+  if(correctSet.has(picked)){
     score += 10;
     streak += 1;
     best = Math.max(best, streak);
@@ -355,7 +377,7 @@ function chooseAnswer(btn, picked, correct){
     feedbackEl.style.color = "#5ec98f";
   } else {
     streak = 0;
-    feedbackEl.textContent = picked === null ? `⏰ Zeit vorbei! Richtig: ${correct}` : `❌ Leider falsch. Richtig: ${correct}`;
+    feedbackEl.textContent = `❌ Leider falsch. Richtig: ${correctText}`;
     feedbackEl.style.color = "#e8665f";
   }
   scoreEl.textContent = score;
