@@ -252,6 +252,9 @@ const VERBS = [
 
 const LEVELS = ["A1","A2","B1","B2","C1","C2"];
 const activeLevels = new Set(["A1","A2","B1"]);
+// Bei diesen Verben fragen wir das Präteritum ab (Modalverben + haben/sein),
+// bei allen anderen liegt der Fokus auf dem Perfekt.
+const PRAETERITUM_FOCUS = new Set(["dürfen","können","mögen","müssen","sollen","wollen","haben","sein"]);
 
 let score = 0, streak = 0, best = 0;
 let pool = [];
@@ -306,7 +309,7 @@ function newQuestion(){
   nextBtn.style.display = "none";
   feedbackEl.textContent = "";
   current = pool[Math.floor(Math.random()*pool.length)];
-  askField = Math.random() < 0.5 ? 2 : 3;
+  askField = PRAETERITUM_FOCUS.has(current[0]) ? 2 : 3;
   const correct = current[askField];
   const wrongs = pickWrongOptions(correct, askField);
   const options = [correct, ...wrongs].sort(()=>Math.random()-0.5);
