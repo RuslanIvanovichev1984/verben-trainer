@@ -52,14 +52,12 @@
     background:none; border:1px solid #5e6790; color:var(--muted); padding:6px 14px;
     border-radius:16px; cursor:pointer; font-size:.85em; margin-top:18px;
   }
-  .timerbar{height:6px; background:#373d54; border-radius:4px; overflow:hidden; margin-bottom:18px;}
-  .timerbar div{height:100%; background:var(--accent); width:100%; transition:width linear;}
 </style>
 </head>
 <body>
 
 <h1>🔥 Starke Verben Trainer</h1>
-<div class="sub">Infinitiv → Präteritum oder Perfekt. Wähle die richtige Form, solange der Balken läuft!</div>
+<div class="sub">Infinitiv → Präteritum oder Perfekt. Wähle die richtige Form, ganz ohne Zeitdruck.</div>
 
 <div class="panel">
   <div class="levels" id="levels"></div>
@@ -67,7 +65,6 @@
     Punkte: <b id="score">0</b>
     Serie: <b id="streak">0</b> <span id="bestBadge" class="badge">Beste Serie: 0</span>
   </div>
-  <div class="timerbar"><div id="timerFill"></div></div>
   <div class="verb" id="verbDisplay"></div>
   <div class="question" id="questionText"></div>
   <div class="options" id="options"></div>
@@ -255,13 +252,12 @@ const VERBS = [
 
 const LEVELS = ["A1","A2","B1","B2","C1","C2"];
 const activeLevels = new Set(["A1","A2","B1"]);
-const TIME_LIMIT = 10000; // ms
 
 let score = 0, streak = 0, best = 0;
 let pool = [];
 let current = null;
 let askField = 2; // 2=Präteritum, 3=Perfekt
-let timerStart, timerHandle, locked = false;
+let locked = false;
 
 const levelsEl = document.getElementById("levels");
 const scoreEl = document.getElementById("score");
@@ -273,7 +269,6 @@ const optionsEl = document.getElementById("options");
 const feedbackEl = document.getElementById("feedback");
 const nextBtn = document.getElementById("nextBtn");
 const restartBtn = document.getElementById("restartBtn");
-const timerFill = document.getElementById("timerFill");
 
 function buildLevelToggles(){
   levelsEl.innerHTML = "";
@@ -308,7 +303,6 @@ function pickWrongOptions(correct, field){
 function newQuestion(){
   if(pool.length < 4){ pool = VERBS; }
   locked = false;
-  clearInterval(timerHandle);
   nextBtn.style.display = "none";
   feedbackEl.textContent = "";
   current = pool[Math.floor(Math.random()*pool.length)];
@@ -328,26 +322,11 @@ function newQuestion(){
     btn.addEventListener("click", ()=>chooseAnswer(btn, opt, correct));
     optionsEl.appendChild(btn);
   });
-
-  startTimer();
-}
-
-function startTimer(){
-  timerFill.style.transition = "none";
-  timerFill.style.width = "100%";
-  requestAnimationFrame(()=>{
-    timerFill.style.transition = `width ${TIME_LIMIT}ms linear`;
-    timerFill.style.width = "0%";
-  });
-  timerHandle = setTimeout(()=>{
-    if(!locked) chooseAnswer(null, null, current[askField]);
-  }, TIME_LIMIT);
 }
 
 function chooseAnswer(btn, picked, correct){
   if(locked) return;
   locked = true;
-  clearTimeout(timerHandle);
   [...optionsEl.children].forEach(b=>{
     b.disabled = true;
     if(b.textContent === correct) b.classList.add("correct");
